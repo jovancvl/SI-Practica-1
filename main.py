@@ -6,6 +6,10 @@ import pandas as pd
 def practica1():
     con = sqlite3.connect('database.db')
     cur = con.cursor()
+    cur.execute('drop table if exists usuarios')
+    cur.execute('drop table if exists emails')
+    cur.execute('drop table if exists fechas')
+    cur.execute('drop table if exists ips')
     cur.execute("CREATE TABLE IF NOT EXISTS usuarios (name TEXT, telefono INTEGER, contrasena TEXT, provincia TEXT, permisos TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS emails (name TEXT, total INTEGER, phishing INTEGER, cliclados INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS fechas (name TEXT, fecha TEXT)")
@@ -46,6 +50,7 @@ def practica1():
 
 
     print("EJERCICIO 2\n")
+
     pd.set_option("display.max_rows", None, "display.max_columns", None)
     cur.execute("SELECT * FROM usuarios")
     users = cur.fetchall() # is list
@@ -69,14 +74,50 @@ def practica1():
     print("\ndescribe ips\n")
     print(df_ips.describe(include='all'))
 
-    #print("\ndescribe fechas y ips\n")
-    #print(df_conexiones.groupby("nombre")["nombre"].count().describe(include='all'))
+    print("\ndescribe fechas en funcion del nomber\n")
+    print(df_fechas.groupby("nombre")["nombre"].count().describe(include='all'))
+
+    print("\ndescribe ips en funcion del nomber\n")
+    print(df_ips.groupby("nombre")["nombre"].count().describe(include='all'))
+
+    print("\nEJERCICIO 3\n")
+
+    df_users_zero = df_users.loc[df_users["permisos"] == "0"]
+    df_users_one = df_users.loc[df_users["permisos"] == "1"]
+    df_users_less200 = df_emails.loc[df_emails["total"] < 200]
+    df_users_more200 = df_emails.loc[df_emails["total"] >= 200]
+
+    df_users_zeroless200 = pd.merge(df_users_zero, df_users_less200, how="inner", on="nombre")
+    df_users_zeromore200 = pd.merge(df_users_zero, df_users_more200, how="inner", on="nombre")
+    df_users_oneless200 = pd.merge(df_users_one, df_users_less200, how="inner", on="nombre")
+    df_users_onemore200 = pd.merge(df_users_one, df_users_more200, how="inner", on="nombre")
+
+    print("\n0 | <200 mean: " + str(df_users_zeroless200["phishing"].mean()))
+    print("\n0 | <200 median: " + str(df_users_zeroless200["phishing"].median()))
+    print("\n0 | <200 variance: " + str(df_users_zeroless200["phishing"].var()))
+    print("\n0 | <200 describe:")
+    print(df_users_zeroless200["phishing"].describe())
+
+    print("\n0 | >200 mean: " + str(df_users_zeromore200["phishing"].mean()))
+    print("\n0 | >200 median: " + str(df_users_zeromore200["phishing"].median()))
+    print("\n0 | >200 variance: " + str(df_users_zeromore200["phishing"].var()))
+    print("\n0 | >200 describe:")
+    print(df_users_zeromore200["phishing"].describe())
+
+    print("\n1 | <200 mean: " + str(df_users_oneless200["phishing"].mean()))
+    print("\n1 | <200 median: " + str(df_users_oneless200["phishing"].median()))
+    print("\n1 | <200 variance: " + str(df_users_oneless200["phishing"].var()))
+    print("\n1 | <200 describe:")
+    print(df_users_oneless200["phishing"].describe())
+
+    print("\n1 | >200 mean: " + str(df_users_onemore200["phishing"].mean()))
+    print("\n1 | >200 median: " + str(df_users_onemore200["phishing"].median()))
+    print("\n1 | >200 variance: " + str(df_users_onemore200["phishing"].var()))
+    print("\n1 | >200 describe:")
+    print(df_users_onemore200["phishing"].describe())
 
     #input("press key to end run")
-    cur.execute('drop table if exists usuarios')
-    cur.execute('drop table if exists emails')
-    cur.execute('drop table if exists fechas')
-    cur.execute('drop table if exists ips')
+
     con.commit()
     con.close()
 
