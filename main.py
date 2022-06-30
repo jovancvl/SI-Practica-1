@@ -158,6 +158,17 @@ def practica1():
     grafico = px.bar(df_webs_critical.head(5), x="nombre", y=["cookies", "aviso", "proteccion_de_datos"])
     #grafico.show()
 
+
+    df_webs_cumplen = df_webs_critical.loc[df_webs_critical["puntos"] == 3]
+    df_webs_nocumplen = df_webs_critical.loc[df_webs_critical["puntos"] != 3]
+    df_webs_cumplen = df_webs_cumplen["creacion"].value_counts()
+    df_webs_nocumplen = df_webs_nocumplen["creacion"].value_counts()
+    grafico = px.bar(df_webs_cumplen, title="paginas que cumplen los criterios")
+    #grafico.show()
+    grafico = px.bar(df_webs_nocumplen, title="paginas que no cumplen los criterios")
+    #grafico.show()
+
+
     #input("press key to end run")
 
     con.close()
