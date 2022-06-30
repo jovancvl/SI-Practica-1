@@ -1,39 +1,83 @@
 import sqlite3
-import os
 import json
+import numpy as np
+import pandas as pd
 
 def practica1():
     con = sqlite3.connect('database.db')
     cur = con.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS usuarios (name TEXT, telefono INTEGER, contrasena TEXT, provincia TEXT, permisos TEXT)")
-    con.commit()
     cur.execute("CREATE TABLE IF NOT EXISTS emails (name TEXT, total INTEGER, phishing INTEGER, cliclados INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS fechas (name TEXT, fecha TEXT)")
+    cur.execute("CREATE TABLE IF NOT EXISTS ips (name TEXT, ip TEXT)")
     con.commit()
-    cur.execute("CREATE TABLE IF NOT EXISTS fechas (name TEXT, value TEXT)")
-    con.commit()
-    cur.execute("CREATE TABLE IF NOT EXISTS ips (name TEXT, value TEXT)")
-    con.commit()
+
     source = json.loads(open("users.json").read())
     users = source['usuarios'] # is list
-
-    #print(users[0].keys())
-    #name = list(users[0].keys())[0]
-    #print(users[0][name]["telefono"])
 
     for u in users:
         name = list(u.keys())[0] # is string
         values = u[name] # is dict
+        if values["telefono"] == "None":
+            values["telefono"] = None
+
+        if values["contrasena"] == "None":
+            values["contrasena"] = None
+
+        if values["provincia"] == "None":
+            values["provincia"] = None
+
+        if values["permisos"] == "None":
+            values["permisos"] = None
+
         cur.execute("INSERT INTO usuarios VALUES (?, ?, ?, ?, ?)", (name, values["telefono"], values["contrasena"], values["provincia"], values["permisos"]))
         e = values["emails"]
         cur.execute("INSERT INTO emails VALUES (?, ?, ?, ?)", (name, e["total"], e["phishing"], e["cliclados"]))
+        #print(len(values["fechas"]))
+        #print(len(values["ips"]))
         for f in values["fechas"]:
-            cur.execute("INSERT INTO fechas VALUES (?, ?)", (name, f))
+            if f != "None":
+                cur.execute("INSERT INTO fechas VALUES (?, ?)", (name, f))
         for ip in values["ips"]:
-            cur.execute("INSERT INTO ips VALUES (?, ?)", (name, ip))
+            #print(ip)
+            if ip != "N" and ip != "o" and ip != "n" and ip != "e":
+                cur.execute("INSERT INTO ips VALUES( ?, ?)", (name, ip))
         con.commit()
 
-    #cur.execute('drop table if exists usuarios')
-    #con.commit()
+
+    print("EJERCICIO 2\n")
+    pd.set_option("display.max_rows", None, "display.max_columns", None)
+    cur.execute("SELECT * FROM usuarios")
+    users = cur.fetchall() # is list
+    df_users = pd.DataFrame(users, columns=["nombre", "telefono", "contrasena", "provincia", "permisos"])
+    cur.execute("SELECT * FROM emails")
+    emails = cur.fetchall()
+    df_emails = pd.DataFrame(emails, columns=["nombre", "total", "phishing", "cliclados"])
+    cur.execute("SELECT * FROM fechas")
+    fechas = cur.fetchall()
+    df_fechas = pd.DataFrame(fechas, columns=["nombre", "fecha"])
+    cur.execute("SELECT * FROM ips")
+    ips = cur.fetchall()
+    df_ips = pd.DataFrame(ips, columns=["nombre", "ip"])
+
+    print("\ndescribe users\n")
+    print(df_users.describe(include='all'))
+    print("\ndescribe emails\n")
+    print(df_emails.describe(include='all'))
+    print("\ndescribe fechas\n")
+    print(df_fechas.describe(include='all'))
+    print("\ndescribe ips\n")
+    print(df_ips.describe(include='all'))
+
+    #print("\ndescribe fechas y ips\n")
+    #print(df_conexiones.groupby("nombre")["nombre"].count().describe(include='all'))
+
+    #input("press key to end run")
+    cur.execute('drop table if exists usuarios')
+    cur.execute('drop table if exists emails')
+    cur.execute('drop table if exists fechas')
+    cur.execute('drop table if exists ips')
+    con.commit()
     con.close()
 
 
