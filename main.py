@@ -2,6 +2,9 @@ import sqlite3
 import json
 import numpy as np
 import pandas as pd
+import plotly.express as px
+
+pd.options.plotting.backend = "plotly"
 
 def practica1():
     con = sqlite3.connect('database.db')
@@ -10,10 +13,13 @@ def practica1():
     cur.execute('drop table if exists emails')
     cur.execute('drop table if exists fechas')
     cur.execute('drop table if exists ips')
+    cur.execute('drop table if exists web')
+    con.commit()
     cur.execute("CREATE TABLE IF NOT EXISTS usuarios (name TEXT, telefono INTEGER, contrasena TEXT, provincia TEXT, permisos TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS emails (name TEXT, total INTEGER, phishing INTEGER, cliclados INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS fechas (name TEXT, fecha TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS ips (name TEXT, ip TEXT)")
+    cur.execute("CREATE TABLE IF NOT EXISTS web (nombre TEXT, cookies INTEGER, aviso INTEGER, prot_datos INTEGER, creacion INTEGER)")
     con.commit()
 
     source = json.loads(open("users.json").read())
@@ -48,6 +54,15 @@ def practica1():
                 cur.execute("INSERT INTO ips VALUES( ?, ?)", (name, ip))
         con.commit()
 
+    web_source = json.loads(open("legal.json").read())
+    webs = web_source["legal"]
+
+    for w in webs:
+        name = list(w.keys())[0]
+        values = w[name]
+        cur.execute("INSERT INTO web VALUES (?, ?, ?, ?, ?)", (name, values["cookies"], values["aviso"], values["proteccion_de_datos"], values["creacion"]))
+        con.commit()
+
 
     print("EJERCICIO 2\n")
 
@@ -65,6 +80,11 @@ def practica1():
     ips = cur.fetchall()
     df_ips = pd.DataFrame(ips, columns=["nombre", "ip"])
 
+    cur.execute("SELECT * FROM web")
+    webs = cur.fetchall()
+    df_webs = pd.DataFrame(webs, columns=["nombre", "cookies", "aviso", "proteccion_de_datos", "creacion"])
+    print(df_webs)
+
     print("\ndescribe users\n")
     print(df_users.describe(include='all'))
     print("\ndescribe emails\n")
@@ -74,10 +94,10 @@ def practica1():
     print("\ndescribe ips\n")
     print(df_ips.describe(include='all'))
 
-    print("\ndescribe fechas en funcion del nomber\n")
+    print("\ndescribe fechas en funcion del nombre\n")
     print(df_fechas.groupby("nombre")["nombre"].count().describe(include='all'))
 
-    print("\ndescribe ips en funcion del nomber\n")
+    print("\ndescribe ips en funcion del nombre\n")
     print(df_ips.groupby("nombre")["nombre"].count().describe(include='all'))
 
     print("\nEJERCICIO 3\n")
@@ -116,9 +136,30 @@ def practica1():
     print("\n1 | >200 describe:")
     print(df_users_onemore200["phishing"].describe())
 
+    print("\nEJERCICIO 4\n")
+
+    df_users_critical = df_emails.copy()
+    lista = []
+    for t, c in zip(df_users_critical["total"], df_users_critical["cliclados"]):
+        lista.append(c/t)
+    df_users_critical["clickrate"] = lista
+    df_users_critical.sort_values(by=["clickrate"], inplace=True, ascending=False)
+    grafico = px.bar(df_users_critical.head(10), x="nombre", y="clickrate")
+    #grafico.show()
+    #print(df_users_critical.head(10))
+
+    df_webs_critical = df_webs.copy()
+    points = []
+    for c, a, p in zip(df_webs_critical["cookies"], df_webs_critical["aviso"], df_webs_critical["proteccion_de_datos"]) :
+        temp = c + a + p
+        points.append(temp)
+    df_webs_critical["puntos"] = points
+    df_webs_critical.sort_values(by=["puntos"], inplace=True, ascending=True)
+    grafico = px.bar(df_webs_critical.head(5), x="nombre", y=["cookies", "aviso", "proteccion_de_datos"])
+    grafico.show()
+
     #input("press key to end run")
 
-    con.commit()
     con.close()
 
 
