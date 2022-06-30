@@ -156,7 +156,7 @@ def practica1():
     df_webs_critical["puntos"] = points
     df_webs_critical.sort_values(by=["puntos"], inplace=True, ascending=True)
     grafico = px.bar(df_webs_critical.head(5), x="nombre", y=["cookies", "aviso", "proteccion_de_datos"])
-    grafico.show()
+    #grafico.show()
 
     #input("press key to end run")
 
